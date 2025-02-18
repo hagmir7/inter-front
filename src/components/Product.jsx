@@ -17,7 +17,7 @@ const Product = () => {
     // Message
     const [dimensionMessage, setDimensionMessage] = useState(null);
     const [colorMessage, setColorMessage] = useState(null);
-  
+
 
     // Attributes
     const [quantity, setQuantity] = useState(1);
@@ -29,7 +29,7 @@ const Product = () => {
 
     const [spinner, setSpinner] = useState(false);
 
-    
+
     const [price, setPrice] = useState();
 
     const [code, setCode] = useState(null);
@@ -43,57 +43,68 @@ const Product = () => {
         }
     }, []);
 
-    function validation(){
-        if(colors.length > 0 && (!color)){
+    function validation() {
+        if (colors.length > 0 && (!color)) {
             setColorMessage("Obligatoire de sélectionner une couleur");
             return false;
-        }else{
+        } else {
             setColorMessage(null);
         }
 
 
-        if(heights.length > 0 &&  width.length > 0 && (!height && !width)){
-            setDimensionMessage("Obligatoire de sélectionner une dimensions");
+        if ((heights.length > 0 && widths.length > 0) && (!height && !width)) {
+            setDimensionMessage("Obligatoire de sélectionner un dimensions");
             return false;
-            
-        }else{
-            setColorMessage(null);
+
+        } else {
+            setDimensionMessage(null);
         }
+
+        if ((heights.length > 0 && widths.length == 0) && (!height)) {
+            setDimensionMessage("Obligatoire de sélectionner un dimensions");
+            return false;
+
+        } else {
+            setDimensionMessage(null);
+        }
+
+        return true
+
     }
 
-    
+
     async function getData() {
 
         const url = new URL(window.location.href);
         url.pathname = `/api${url.pathname}`;
-        const  full_url = url.toString()
-        
-        
+        const full_url = url.toString()
+
+
         try {
             const response = await fetch('http://localhost:8000/api/product/facade-laca-g1-atania');
             const data = await response.json();
-    
+
             setAttributes(data.data.attributes || []);
             setColors(data.data.colors || []);
             setDimensions(Array.isArray(data.data.dimensions) ? data.data.dimensions : []);
             setData(data.data);
             setPrice(data.data.price);
             setImages((data.data.images || []).map(image => `https://intercocina.com/storage/public/${image}`));
-    
+
             if (data.data.attributes?.length > 0) {
-                setAttribute(data.data.attributes[0]); 
+                setAttribute(data.data.attributes[0]);
             }
-    
+
             if (data.data.dimensions?.length > 0) {
                 setHeights([...new Set(data.data.dimensions.map(item => item?.height).filter(h => h != null))]);
                 setWidths([...new Set(data.data.dimensions.map(item => item?.width).filter(w => w != null))]);
             }
-    
+
         } catch (error) {
             console.log("Error fetching data:", error);
         }
     }
-    
+
 
 
 
@@ -103,7 +114,7 @@ const Product = () => {
     const findDimension = () => {
 
         const validDimensions = color ? dimensions.filter(dim => dim.width >= width && dim.height >= height && dim.color_id == color) :
-             dimensions.filter(dim => dim.width >= width && dim.height >= height );
+            dimensions.filter(dim => dim.width >= width && dim.height >= height);
 
 
         if (validDimensions.length === 0) {
@@ -129,7 +140,7 @@ const Product = () => {
             setIsDirty(false);
         }
     }, [height, width, isDirty]);
-    
+
 
 
 
@@ -187,11 +198,11 @@ const Product = () => {
     }
 
 
-    function addToCart(){
-        if(!validation()){
+    function addToCart() {
+        if (!validation()) {
             return;
         }
-        
+
         setSpinner(true);
         // const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const cart = {
@@ -200,7 +211,7 @@ const Product = () => {
             price: price,
             quantity: quantity,
             attributes: {
-                color : color ? color : null ,
+                color: color ? color : null,
                 color_name: color ? dimension.color : null,
                 image: data.images[0],
                 dimension: `${width} * ${height}`,
@@ -211,7 +222,7 @@ const Product = () => {
                 special: special
 
             }
-            
+
         }
 
         fetch("http://localhost:8000/api/add-to-cart", {
@@ -222,29 +233,29 @@ const Product = () => {
                 "Accept": "application/json"
             },
             // credentials: 'include',
-            body: JSON.stringify({cart})
+            body: JSON.stringify({ cart })
         })
-        .then(response => response.json())
-        .then(result => {
-            console.log("Success:", result);
-            setSpinner(false);
-        })
-        .catch(error => console.error("Error:", error));
+            .then(response => response.json())
+            .then(result => {
+                console.log("Success:", result);
+                setSpinner(false);
+            })
+            .catch(error => console.error("Error:", error));
 
-        
-        
+
+
     }
 
 
 
     function changeAttribute(e) {
         const selectedValue = parseInt(e.target.value, 10);
-       
-        
+
+
         if (isNaN(selectedValue)) return;
         const valide_dimensions = dimensions.filter(item => item?.attribute_id === selectedValue);
         setAttribute(attributes.find((attribute) => attribute.id === selectedValue));
-        
+
         setHeights([...new Set(valide_dimensions.map(item => item?.height))]);
         setWidths([...new Set(valide_dimensions.map(item => item?.width))]);
     }
@@ -254,18 +265,17 @@ const Product = () => {
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 bg-gray-50 py-6 rounded-xl border">
-            <div className='w-full' style={{margin: '0 auto' }}>
+            <div className='w-full' style={{ margin: '0 auto' }}>
                 {
-                    data  ? <Carousel images={images} /> : (<span>This is the best one</span>)
+                    data ? <Carousel images={images} /> : (<span>This is the best one</span>)
                 }
-                
             </div>
             <div className="flex justify-center">
-                <div className="pro-detail w-full max-lg:max-w-[608px] lg:pl-8 xl:pl-12 max-lg:mx-auto max-lg:mt-6 px-3">
+                <div className="pro-detail w-full md:max-lg:max-w-[608px] lg:pl-8 xl:pl-12 max-lg:mx-auto max-lg:mt-6 px-3">
                     <div className="sm:flex flex-initial items-center justify-between gap-6 mb-4">
                         <div className="text-left">
                             <h1 className="font-manrope font-bold sm:text-3xl text-2xl leading-10 text-gray-900 mb-2">{data?.name}</h1>
-                            <h2 className="font-normal text-base text-gray-500 text-left">{ data.type } {code ? `, Ref: ${code}` : ""}<span></span></h2>
+                            <h2 className="font-normal text-base text-gray-500 text-left">{data.type} {code ? `, Ref: ${code}` : ""}<span></span></h2>
                         </div>
                         <a href="/admin/products/213/edit" className="group transition-all duration-500 p-0.5 sm:block hidden">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
@@ -284,7 +294,7 @@ const Product = () => {
                             <div className="font-manrope font-semibold sm:text-2xl text-xl leading-9 text-gray-900">
                                 <span>{price}</span> MAD
                             </div>
-                            <span className="ml-3 font-semibold text-lg text-green-600"> { data.status } </span>
+                            <span className="ml-3 font-semibold text-lg text-green-600"> {data.status} </span>
                         </div>
 
                         <svg className="mx-5 max-[400px]:hidden" xmlns="http://www.w3.org/2000/svg" width="2" height="36" viewBox="0 0 2 36" fill="none">
@@ -335,7 +345,7 @@ const Product = () => {
                                 (<div className="md:ms-4 text-left">
                                     <div>
                                         <p className="font-bold text-gray-900">Special</p>
-                                            <div className="text-black/70 mb-3 bg-white px-3 py-3 flex items-center font-semibold transition-all cursor-pointer hover:border-blue-600/30 border-gray-200 rounded-lg outline-blue-600/50 appearance-none invalid:text-black/30 w-64 border-2">
+                                        <div className="text-black/70 mb-3 bg-white px-3 py-3 flex items-center font-semibold transition-all cursor-pointer hover:border-blue-600/30 border-gray-200 rounded-lg outline-blue-600/50 appearance-none invalid:text-black/30 w-64 border-2">
                                             <input
                                                 checked={special}
                                                 onChange={(e) => setSpecial(e.target.checked)}
@@ -347,16 +357,16 @@ const Product = () => {
                                             <label htmlFor="bordered-checkbox-1" className="w-full h-4 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">
                                                 Special
                                             </label>
-                                            </div>
                                         </div>
-                                    
+                                    </div>
+
                                 </div>) : ""
                         }
                     </div>
 
-    
+
                     {
-                        
+
                         colors.length > 0 ?
                             (<div className='text-left'>
                                 <p className="font-bold text-gray-900">Couleur</p>
@@ -364,7 +374,7 @@ const Product = () => {
                                     {
                                         colors.map((color, index) => {
                                             return (
-                                                <li onClick={()=> {setColor(color.id); chanageDimension(); findDimension()}} className="color-box group text-center me-3 relative" key={index}>
+                                                <li onClick={() => { setColor(color.id); chanageDimension(); findDimension() }} className="color-box group text-center me-3 relative" key={index}>
                                                     <input type="radio" value={color.id} id={`color-${color.id}`} name="color" className="hidden peer" />
                                                     <label htmlFor={`color-${color.id}`} className="inline-flex items-center justify-between w-full p-4 text-gray-500 border-gray-500 rounded-lg cursor-pointer peer-checked:border-red-600 peer-checked:border-4 border-2 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100" style={{ 'backgroundImage': `url('https://intercocina.com/storage/${color.image}')` }}></label>
                                                     <div id="tooltipExample" className="-top-56 hidden absolute overflow-hidden bg-neutral-950 ease-out left-1/2 p-0 border-black border-2 peer-focus:block peer-hover:block rounded text-center text-sm text-white transition-all w-40 whitespace-nowrap z-10" role="tooltip">
@@ -391,11 +401,11 @@ const Product = () => {
                             {colorMessage}
                         </div> : ""
                     }
-                   
+
                     {
 
                         !special &&
-                        heights.length > 0 ?
+                            heights.length > 0 ?
                             (<div className='text-left'>
                                 <div className="font-bold">Hauteur</div>
                                 <ul className="flex flex-wrap w-full gap-3">
@@ -416,7 +426,7 @@ const Product = () => {
 
                     {
                         !special &&
-                        widths.length > 0 ?
+                            widths.length > 0 ?
                             (<div className='text-left'>
                                 <div className="font-bold">Largeur</div>
                                 <ul className="flex flex-wrap w-full gap-3">
@@ -434,7 +444,7 @@ const Product = () => {
                             </div>) : ""
                     }
 
-                    {special ? 
+                    {special ?
                         <div className='text-left md:flex gap-3'>
                             <div>
                                 <label htmlFor="height-input">Hauteur</label><br />
@@ -467,7 +477,7 @@ const Product = () => {
                                 />
                             </div>
                         </div>
-                    : ""
+                        : ""
                     }
 
                     {
@@ -492,12 +502,7 @@ const Product = () => {
                             </button>
 
                             <label className="hidden" htmlFor="qty">Quantity:</label>
-                            <input
-                                type="number"
-                                name="qty"
-                                id="qty"
-                                value={quantity}
-                                onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                            <input type="number" name="qty" id="qty" value={quantity} onChange={(e) => setQuantity(Math.max(0, parseInt(e.target.value, 10) || 0))}
                                 className="font-semibold text-gray-900 text-lg py-3 px-2 w-full min-[400px]:min-w-[75px] h-full bg-transparent placeholder:text-gray-900 text-center hover:text-red-600 outline-0 hover:placeholder:text-red-600 cursor-pointer"
                             />
 
@@ -509,19 +514,11 @@ const Product = () => {
                         </div>
                         <button onClick={addToCart} className="cursor-pointer group border-2 border-red-400 py-3 px-5 rounded-full bg-red-50 text-red-600 font-semibold text-lg w-full flex items-center justify-center gap-2 shadow-sm shadow-transparent transition-all duration-500 hover:shadow-red-300 hover:bg-red-100">
                             {spinner ? (
-                                <svg
-                                    aria-hidden="true"
-                                    className="inline w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-red-600"
-                                    viewBox="0 0 100 101"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <path
-                                        d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
+                                <svg aria-hidden="true" className="inline w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-red-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
                                         fill="currentColor"
                                     />
-                                    <path
-                                        d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
+                                    <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z"
                                         fill="currentFill"
                                     />
                                 </svg>

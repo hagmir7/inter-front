@@ -81,7 +81,7 @@ const Product = () => {
 
 
         try {
-            const response = await fetch('http://localhost:8000/api/product/facade-laca-g1-atania');
+            const response = await fetch('http://localhost:8000/api/product/menagere-pvc-gris');
             const data = await response.json();
 
             setAttributes(data.data.attributes || []);
@@ -195,6 +195,17 @@ const Product = () => {
                 setDimensionMessage(null);
             }
         }
+
+        // For only
+        if (width && (heights.length === 0)) {
+            const current_demension = dimensions.find((item) => item.width === width);
+            if (current_demension) {
+                setPrice(current_demension.price);
+                setDimension(current_demension);
+                setCode(current_demension.code);
+                setDimensionMessage(null);
+            }
+        }
     }
 
 
@@ -214,16 +225,21 @@ const Product = () => {
                 color: color ? color : null,
                 color_name: color ? dimension.color : null,
                 image: data.images[0],
-                dimension: `${width} * ${height}`,
+                height: height ? height : null,
+                width : width ? width : null,
+                dimension: height && width ? `${height} * ${width}` : null,
                 slug: data.slug,
-                attribute: attribute,
+                attribute: attributes.length ? attribute : null,
                 product_id: data.id,
-                dimension_id: dimension?.id,
+                dimension_id: dimension ? dimension.id : null,
                 special: special
 
             }
 
         }
+
+        console.log(JSON.stringify({ cart }));
+        
 
         fetch("http://localhost:8000/api/add-to-cart", {
             method: "POST",
@@ -242,8 +258,6 @@ const Product = () => {
             })
             .catch(error => console.error("Error:", error));
 
-
-
     }
 
 
@@ -261,8 +275,6 @@ const Product = () => {
     }
 
 
-
-
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 bg-gray-50 py-6 rounded-xl border">
             <div className='w-full' style={{ margin: '0 auto' }}>
@@ -277,7 +289,7 @@ const Product = () => {
                             <h1 className="font-manrope font-bold sm:text-3xl text-2xl leading-10 text-gray-900 mb-2">{data?.name}</h1>
                             <h2 className="font-normal text-base text-gray-500 text-left">{data.type} {code ? `, Ref: ${code}` : ""}<span></span></h2>
                         </div>
-                        <a href="/admin/products/213/edit" className="group transition-all duration-500 p-0.5 sm:block hidden">
+                        <a href={`/admin/products/${data.id}/edit`} className="group transition-all duration-500 p-0.5 sm:block hidden">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                                 <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
                                     <path className="stroke-green-600 transition-all duration-500 group-hover:stroke-green-700" d="M9.533 11.15A1.82 1.82 0 0 0 9 12.438V15h2.578c.483 0 .947-.192 1.289-.534l7.6-7.604a1.82 1.82 0 0 0 0-2.577l-.751-.751a1.82 1.82 0 0 0-2.578 0z"></path>
@@ -359,7 +371,6 @@ const Product = () => {
                                             </label>
                                         </div>
                                     </div>
-
                                 </div>) : ""
                         }
                     </div>

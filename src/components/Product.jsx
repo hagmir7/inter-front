@@ -21,9 +21,9 @@ const Product = () => {
 
     // Attributes
     const [quantity, setQuantity] = useState(1);
-    const [color, setColor] = useState('');
-    const [height, setHeight] = useState('');
-    const [width, setWidth] = useState('');
+    const [color, setColor] = useState(null);
+    const [height, setHeight] = useState(null);
+    const [width, setWidth] = useState(null);
     const [attribute, setAttribute] = useState('');
     const [special, setSpecial] = useState(false);
 
@@ -43,31 +43,28 @@ const Product = () => {
         }
     }, []);
 
+
+    function isEmpty(obj) {
+        return Object.keys(obj).length === 0;
+    }
+
     function validation() {
         if (colors.length > 0 && (!color)) {
             setColorMessage("Obligatoire de sélectionner une couleur");
             return false;
-        } else {
-            setColorMessage(null);
         }
+        setColorMessage(null);
 
-
-        if ((heights.length > 0 && widths.length > 0) && (!height && !width)) {
-            setDimensionMessage("Obligatoire de sélectionner un dimensions");
+        if(heights.length > 0 && height === null){
+            setDimensionMessage("Obligatoire de sélectionner la hauteur");
             return false;
-
-        } else {
-            setDimensionMessage(null);
         }
 
-        if ((heights.length > 0 && widths.length == 0) && (!height)) {
-            setDimensionMessage("Obligatoire de sélectionner un dimensions");
+        if(widths.length > 0 && width === null){
+            setDimensionMessage("Obligatoire de sélectionner la largeur");
             return false;
-
-        } else {
-            setDimensionMessage(null);
         }
-
+        setDimensionMessage(null);
         return true
 
     }
@@ -81,7 +78,7 @@ const Product = () => {
 
 
         try {
-            const response = await fetch('http://localhost:8000/api/product/menagere-pvc-gris');
+            const response = await fetch("https://intercocina.com/api/product/facade-laca-g1-atania");
             const data = await response.json();
 
             setAttributes(data.data.attributes || []);
@@ -99,12 +96,16 @@ const Product = () => {
                 setHeights([...new Set(data.data.dimensions.map(item => item?.height).filter(h => h != null))]);
                 setWidths([...new Set(data.data.dimensions.map(item => item?.width).filter(w => w != null))]);
             }
+            
+
+            if(data.data.dimensions?.length === 0){
+                setCode(data.data?.code);
+            }
 
         } catch (error) {
             console.log("Error fetching data:", error);
         }
     }
-
 
 
 
@@ -142,10 +143,10 @@ const Product = () => {
     }, [height, width, isDirty]);
 
 
-
-
-
     function chanageDimension() {
+        if(color){
+            setColorMessage(null)
+        }
 
         if (height && width && color) {
             const current_demension = dimensions.find((item) => item.width === width && item.height === height && item.color_id === color);
@@ -161,6 +162,7 @@ const Product = () => {
             return;
         }
 
+
         if (height && (widths.length === 0)) {
             const current_demension = dimensions.find((item) => item.height === height);
             if (current_demension) {
@@ -173,6 +175,7 @@ const Product = () => {
 
 
 
+        // For Height and Width
         if (height && width) {
             const current_demension = dimensions.find((item) => item.width === width && item.height === height);
             if (current_demension) {
@@ -186,6 +189,7 @@ const Product = () => {
             }
         }
 
+        // For onley Height
         if (height && (widths.length === 0)) {
             const current_demension = dimensions.find((item) => item.height === height);
             if (current_demension) {
@@ -196,13 +200,13 @@ const Product = () => {
             }
         }
 
-        // For only
+        // For only Width
         if (width && (heights.length === 0)) {
             const current_demension = dimensions.find((item) => item.width === width);
             if (current_demension) {
                 setPrice(current_demension.price);
                 setDimension(current_demension);
-                setCode(current_demension.code);
+                setCode(current_demension.code); 
                 setDimensionMessage(null);
             }
         }
@@ -210,20 +214,24 @@ const Product = () => {
 
 
     function addToCart() {
+
         if (!validation()) {
             return;
         }
 
+
+
+
         setSpinner(true);
-        // const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
         const cart = {
-            id: `${data.slug}${width}-${height}${dimension?.id}`,
+            id: `${data.slug}${width}-${height}${dimension?.id}${color}${attribute?.id}`,
             name: data.name,
             price: price,
             quantity: quantity,
             attributes: {
                 color: color ? color : null,
-                color_name: color ? dimension.color : null,
+                color_name: color && dimension ? dimension.color : color ? colors.find(item => item.id === color).name : null,
                 image: data.images[0],
                 height: height ? height : null,
                 width : width ? width : null,
@@ -238,25 +246,32 @@ const Product = () => {
 
         }
 
-        console.log(JSON.stringify({ cart }));
+        // console.log(JSON.stringify({ cart }));
         
 
-        fetch("http://localhost:8000/api/add-to-cart", {
+        fetch("/add-to-cart", {
             method: "POST",
             headers: {
                 "Content-Type": "application/json",
-                // "X-CSRF-TOKEN": "tiK2HLtKSvXr4jePZw76mfuhnSHwi0DrN6jK7mqO",
+                "X-CSRF-TOKEN": csrfToken,
                 "Accept": "application/json"
             },
-            // credentials: 'include',
+            credentials: 'include',
             body: JSON.stringify({ cart })
         })
             .then(response => response.json())
             .then(result => {
-                console.log("Success:", result);
                 setSpinner(false);
+                if (window.Livewire) {
+                    window.Livewire.dispatch('add-to-cart');
+                } else {
+                    console.error("Livewire is not loaded");
+                }
             })
-            .catch(error => console.error("Error:", error));
+            .catch(error => {
+                console.error("Error:", error);
+                setSpinner(false);
+            });
 
     }
 
@@ -276,19 +291,60 @@ const Product = () => {
 
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 bg-gray-50 py-6 rounded-xl border">
-            <div className='w-full' style={{ margin: '0 auto' }}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 bg-gray-50 py-6 rounded-xl border max-w-7xl mx-auto">
+            <div className='w-full px-4' style={{ margin: '0 auto' }}>
                 {
-                    data ? <Carousel images={images} /> : (<span>This is the best one</span>)
+                    !isEmpty(data) ? <Carousel images={images} /> :
+                     (<div className='h-96'>
+                        <div className="flex items-center justify-center bg-gray-300 rounded-sm sm:w-96 animate-pulse w-full mr-4" style={{width: "100%", height: "400px"}}>
+                            <svg className="w-10 h-10 text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+                                <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
+                            </svg>
+                        </div>
+                        <div className='grid grid-cols-4 gap-2 mt-4'>
+                            <div className="flex items-center justify-center bg-gray-300 rounded-sm sm:w-96 animate-pulse w-full mr-4 h-20" style={{width: "100%"}}>
+                                <svg className="w-10 h-10 text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+                                    <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
+                                </svg>
+                            </div>
+                            <div className="flex items-center justify-center bg-gray-300 rounded-sm sm:w-96 animate-pulse w-full mr-4 h-20" style={{width: "100%"}}>
+                                <svg className="w-10 h-10 text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+                                    <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
+                                </svg>
+                            </div>
+                            <div className="flex items-center justify-center bg-gray-300 rounded-sm sm:w-96 animate-pulse w-full mr-4 h-20" style={{width: "100%"}}>
+                                <svg className="w-10 h-10 text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+                                    <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
+                                </svg>
+                            </div>
+                            <div className="flex items-center justify-center bg-gray-300 rounded-sm sm:w-96 animate-pulse w-full mr-4 h-20" style={{width: "100%"}}>
+                                <svg className="w-10 h-10 text-gray-200" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+                                    <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z"/>
+                                </svg>
+                            </div>
+                        </div>
+                     </div>)
                 }
             </div>
             <div className="flex justify-center">
                 <div className="pro-detail w-full md:max-lg:max-w-[608px] lg:pl-8 xl:pl-12 max-lg:mx-auto max-lg:mt-6 px-3">
                     <div className="sm:flex flex-initial items-center justify-between gap-6 mb-4">
-                        <div className="text-left">
-                            <h1 className="font-manrope font-bold sm:text-3xl text-2xl leading-10 text-gray-900 mb-2">{data?.name}</h1>
-                            <h2 className="font-normal text-base text-gray-500 text-left">{data.type} {code ? `, Ref: ${code}` : ""}<span></span></h2>
-                        </div>
+                        {
+                            !isEmpty(data) ? (
+                                <div className="text-left">
+                                    <h1 className="font-manrope font-bold sm:text-3xl text-2xl leading-10 text-gray-900 mb-2">{data?.name}</h1>
+                                    <h2 className="font-normal text-base text-gray-500 text-left">
+                                        {data.type} {code ? `, Ref: ${code}` : ""}
+                                    </h2>
+                                </div>
+                            ) : (
+                                <div role="status" className="bg-gray-300 rounded-sm sm:w-96 animate-pulse w-full mr-4 h-10">
+                                    <span className="sr-only">Loading...</span>
+                                </div>
+                            )
+                        }
+
+                        
                         <a href={`/admin/products/${data.id}/edit`} className="group transition-all duration-500 p-0.5 sm:block hidden">
                             <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24">
                                 <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5">
@@ -298,42 +354,63 @@ const Product = () => {
                             </svg>
                         </a>
                     </div>
-                    <p className="mb-3 text-left">{data.description}</p>
+                    
+                    {
+                        !isEmpty(data) ? 
+                         (<p className="mb-3 text-left">{data.description}</p>) : 
+                         (<div role="status" className="bg-gray-300 rounded-sm animate-pulse w-full mr-4 h-10">
+                            <span className="sr-only">Loading...</span>
+                        </div>)
+                    }
 
-                    <div className="flex flex-col min-[400px]:flex-row min-[400px]:items-center mb-5 gap-y-3 flex-wrap">
-
-                        <div className="flex items-center">
-                            <div className="font-manrope font-semibold sm:text-2xl text-xl leading-9 text-gray-900">
-                                <span>{price}</span> MAD
+                    {
+                        isEmpty(data) ?
+                        (<div>
+                            <div role="status" className="bg-gray-300 rounded-sm animate-pulse w-full mr-4 h-16 mt-5">
+                                <span className="sr-only">Loading...</span>
                             </div>
-                            <span className="ml-3 font-semibold text-lg text-green-600"> {data.status} </span>
-                        </div>
+                            <div role="status" className="bg-gray-300 rounded-sm animate-pulse w-full mr-4 h-16 mt-5">
+                                <span className="sr-only">Loading...</span>
+                            </div>
+                            <div role="status" className="bg-gray-300 rounded-sm animate-pulse w-full mr-4 h-16 mt-5">
+                                <span className="sr-only">Loading...</span>
+                            </div>
+                        </div>) :
+                            (<div className="flex flex-col min-[400px]:flex-row min-[400px]:items-center mb-5 gap-y-3 flex-wrap">
 
-                        <svg className="mx-5 max-[400px]:hidden" xmlns="http://www.w3.org/2000/svg" width="2" height="36" viewBox="0 0 2 36" fill="none">
-                            <path d="M1 0V36" stroke="#E5E7EB"></path>
-                        </svg>
+                                <div className="flex items-center">
+                                    <div className="font-manrope font-semibold sm:text-2xl text-xl leading-9 text-gray-900">
+                                        <span>{price}</span> MAD
+                                    </div>
+                                    <span className="ml-3 font-semibold text-lg text-green-600"> {data.status} </span>
+                                </div>
 
-                        <button className="flex items-center gap-1 rounded-lg bg-amber-400 py-1.5 px-2.5 w-max">
-                            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <g clipPath="url(#clip0_12657_16865)">
-                                    <path d="M8.10326 2.26718C8.47008 1.52393 9.52992 1.52394 9.89674 2.26718L11.4124 5.33818C11.558 5.63332 11.8396 5.83789 12.1653 5.88522L15.5543 6.37768C16.3746 6.49686 16.7021 7.50483 16.1086 8.08337L13.6562 10.4738C13.4205 10.7035 13.313 11.0345 13.3686 11.3589L13.9475 14.7343C14.0877 15.5512 13.2302 16.1742 12.4966 15.7885L9.46534 14.1948C9.17402 14.0417 8.82598 14.0417 8.53466 14.1948L5.5034 15.7885C4.76978 16.1742 3.91235 15.5512 4.05246 14.7343L4.63137 11.3589C4.68701 11.0345 4.57946 10.7035 4.34378 10.4738L1.89144 8.08337C1.29792 7.50483 1.62543 6.49686 2.44565 6.37768L5.8347 5.88522C6.16041 5.83789 6.44197 5.63332 6.58764 5.33818L8.10326 2.26718Z" fill="white"></path>
-                                    <g clipPath="url(#clip1_12657_16865)">
-                                        <path d="M8.10326 2.26718C8.47008 1.52393 9.52992 1.52394 9.89674 2.26718L11.4124 5.33818C11.558 5.63332 11.8396 5.83789 12.1653 5.88522L15.5543 6.37768C16.3746 6.49686 16.7021 7.50483 16.1086 8.08337L13.6562 10.4738C13.4205 10.7035 13.313 11.0345 13.3686 11.3589L13.9475 14.7343C14.0877 15.5512 13.2302 16.1742 12.4966 15.7885L9.46534 14.1948C9.17402 14.0417 8.82598 14.0417 8.53466 14.1948L5.5034 15.7885C4.76978 16.1742 3.91235 15.5512 4.05246 14.7343L4.63137 11.3589C4.68701 11.0345 4.57946 10.7035 4.34378 10.4738L1.89144 8.08337C1.29792 7.50483 1.62543 6.49686 2.44565 6.37768L5.8347 5.88522C6.16041 5.83789 6.44197 5.63332 6.58764 5.33818L8.10326 2.26718Z" fill="white"></path>
-                                    </g>
-                                </g>
-                                <defs>
-                                    <clipPath id="clip0_12657_16865">
-                                        <rect width="18" height="18" fill="white"></rect>
-                                    </clipPath>
-                                    <clipPath id="clip1_12657_16865">
-                                        <rect width="18" height="18" fill="white"></rect>
-                                    </clipPath>
-                                </defs>
-                            </svg>
-                            <span className="text-base font-medium text-white">0</span>
-                        </button>
+                                <svg className="mx-5 max-[400px]:hidden" xmlns="http://www.w3.org/2000/svg" width="2" height="36" viewBox="0 0 2 36" fill="none">
+                                    <path d="M1 0V36" stroke="#E5E7EB"></path>
+                                </svg>
 
-                    </div>
+                                <button className="flex items-center gap-1 rounded-lg bg-amber-400 py-1.5 px-2.5 w-max">
+                                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <g clipPath="url(#clip0_12657_16865)">
+                                            <path d="M8.10326 2.26718C8.47008 1.52393 9.52992 1.52394 9.89674 2.26718L11.4124 5.33818C11.558 5.63332 11.8396 5.83789 12.1653 5.88522L15.5543 6.37768C16.3746 6.49686 16.7021 7.50483 16.1086 8.08337L13.6562 10.4738C13.4205 10.7035 13.313 11.0345 13.3686 11.3589L13.9475 14.7343C14.0877 15.5512 13.2302 16.1742 12.4966 15.7885L9.46534 14.1948C9.17402 14.0417 8.82598 14.0417 8.53466 14.1948L5.5034 15.7885C4.76978 16.1742 3.91235 15.5512 4.05246 14.7343L4.63137 11.3589C4.68701 11.0345 4.57946 10.7035 4.34378 10.4738L1.89144 8.08337C1.29792 7.50483 1.62543 6.49686 2.44565 6.37768L5.8347 5.88522C6.16041 5.83789 6.44197 5.63332 6.58764 5.33818L8.10326 2.26718Z" fill="white"></path>
+                                            <g clipPath="url(#clip1_12657_16865)">
+                                                <path d="M8.10326 2.26718C8.47008 1.52393 9.52992 1.52394 9.89674 2.26718L11.4124 5.33818C11.558 5.63332 11.8396 5.83789 12.1653 5.88522L15.5543 6.37768C16.3746 6.49686 16.7021 7.50483 16.1086 8.08337L13.6562 10.4738C13.4205 10.7035 13.313 11.0345 13.3686 11.3589L13.9475 14.7343C14.0877 15.5512 13.2302 16.1742 12.4966 15.7885L9.46534 14.1948C9.17402 14.0417 8.82598 14.0417 8.53466 14.1948L5.5034 15.7885C4.76978 16.1742 3.91235 15.5512 4.05246 14.7343L4.63137 11.3589C4.68701 11.0345 4.57946 10.7035 4.34378 10.4738L1.89144 8.08337C1.29792 7.50483 1.62543 6.49686 2.44565 6.37768L5.8347 5.88522C6.16041 5.83789 6.44197 5.63332 6.58764 5.33818L8.10326 2.26718Z" fill="white"></path>
+                                            </g>
+                                        </g>
+                                        <defs>
+                                            <clipPath id="clip0_12657_16865">
+                                                <rect width="18" height="18" fill="white"></rect>
+                                            </clipPath>
+                                            <clipPath id="clip1_12657_16865">
+                                                <rect width="18" height="18" fill="white"></rect>
+                                            </clipPath>
+                                        </defs>
+                                    </svg>
+                                    <span className="text-base font-medium text-white">0</span>
+                                </button>
+
+                            </div>)
+                     }
 
                     <div className="md:flex text-left">
                         {
@@ -366,7 +443,7 @@ const Product = () => {
                                                 name="bordered-checkbox"
                                                 className="h-4 w-4 text-blue-600 bg-gray-100 border-gray-300 rounded"
                                             />
-                                            <label htmlFor="bordered-checkbox-1" className="w-full h-4 ms-2 text-sm font-medium text-gray-900 dark:text-gray-300">
+                                            <label htmlFor="bordered-checkbox-1" className="w-full h-4 ms-2 text-sm font-medium text-gray-900">
                                                 Special
                                             </label>
                                         </div>
@@ -385,12 +462,18 @@ const Product = () => {
                                     {
                                         colors.map((color, index) => {
                                             return (
-                                                <li onClick={() => { setColor(color.id); chanageDimension(); findDimension() }} className="color-box group text-center me-3 relative" key={index}>
+                                                <li onClick={() => {
+                                                    setColor(color.id);
+                                                    if (dimensions.length > 0) {
+                                                        chanageDimension();
+                                                        findDimension();
+                                                    }
+                                                }} className="color-box group text-center me-3 relative" key={index}>
                                                     <input type="radio" value={color.id} id={`color-${color.id}`} name="color" className="hidden peer" />
-                                                    <label htmlFor={`color-${color.id}`} className="inline-flex items-center justify-between w-full p-4 text-gray-500 border-gray-500 rounded-lg cursor-pointer peer-checked:border-red-600 peer-checked:border-4 border-2 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100" style={{ 'backgroundImage': `url('https://intercocina.com/storage/${color.image}')` }}></label>
+                                                    <label htmlFor={`color-${color.id}`} className="inline-flex items-center justify-between w-full p-4 text-gray-500 border-gray-500 rounded-lg cursor-pointer peer-checked:border-red-600 peer-checked:border-4 border-2 peer-checked:text-red-600 hover:text-gray-600 hover:bg-gray-100" style={{ 'backgroundImage': `url('https://intercocina.com/storage/public/${color.image}')` }}></label>
                                                     <div id="tooltipExample" className="-top-56 hidden absolute overflow-hidden bg-neutral-950 ease-out left-1/2 p-0 border-black border-2 peer-focus:block peer-hover:block rounded text-center text-sm text-white transition-all w-40 whitespace-nowrap z-10" role="tooltip">
                                                         {color.name}
-                                                        <img className="w-full" src={`https://intercocina.com/storage/${color.image}`} alt={color.name} />
+                                                        <img className="w-full" src={`https://intercocina.com/storage/public/${color.image}`} alt={color.name} />
                                                     </div>
                                                 </li>
                                             )
@@ -525,7 +608,7 @@ const Product = () => {
                         </div>
                         <button onClick={addToCart} className="cursor-pointer group border-2 border-red-400 py-3 px-5 rounded-full bg-red-50 text-red-600 font-semibold text-lg w-full flex items-center justify-center gap-2 shadow-sm shadow-transparent transition-all duration-500 hover:shadow-red-300 hover:bg-red-100">
                             {spinner ? (
-                                <svg aria-hidden="true" className="inline w-6 h-6 text-gray-200 animate-spin dark:text-gray-600 fill-red-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <svg aria-hidden="true" className="inline w-6 h-6 text-gray-200 animate-spin fill-red-600" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z"
                                         fill="currentColor"
                                     />

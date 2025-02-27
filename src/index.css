@@ -5,3 +5,41 @@
   font-optical-sizing: auto;
   font-style: normal;
 }
+
+.swiper-wrapper div {
+
+}
+
+.swiper-slide-fully-visible img {
+  width: 100px!important;
+  /* height: 100px!important; */
+  height: auto;
+
+}
+
+.swiper-wrapper {
+  height: auto;
+}
+
+.nav-for-slider .swiper-slide img {
+  border: 2px solid transparent;
+  border-radius: 10px;
+
+}
+
+.nav-for-slider .swiper-slide-thumb-active img {
+
+  border-color: rgb(239 68 68 / 500);
+}
+
+.header-swiper{
+  width: 35rem!important;
+}
+
+.pswp__img{
+  height: auto!important;
+  margin-top: 7rem;
+}
+
+
+/* swiper-slide swiper-slide-visible  swiper-slide-thumb-active */

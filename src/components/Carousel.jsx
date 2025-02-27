@@ -44,18 +44,8 @@ const Carousel = ({ images }) => {
         >
           {images.map((image, index) => (
             <SwiperSlide key={index}>
-              <a
-                href={image}
-                data-pswp-width="1875"
-                data-pswp-height="2500"
-                key={'gallery' + '-' + index}
-                onClick={(e) => e.preventDefault()}
-              >
-                <img
-                  src={image}
-                  className='lazy-image max-lg:mx-auto rounded-2xl m-auto max-h-[500px] mt-0 loaded'
-                  alt={`Product ${index + 1}`}
-                />
+              <a href={image} data-pswp-width="1875" data-pswp-height="2500" key={'gallery' + '-' + index} onClick={(e) => e.preventDefault()} >
+                <img src={image} className='lazy-image max-lg:mx-auto rounded-2xl m-auto max-h-[550px] mt-0 loaded' alt={`Product ${index + 1}`} />
               </a>
             </SwiperSlide>
           ))}
@@ -69,11 +59,10 @@ const Carousel = ({ images }) => {
         slidesPerView={4}
         onSwiper={setThumbsSwiper}
         watchSlidesProgress
-        
         style={{ padding: '10px' }}
       >
         {images.map((image, index) => (
-          <SwiperSlide key={index} style={{width: '100px'}}>
+          <SwiperSlide key={index}>
             <img
               src={image}
               alt={`Thumbnail ${index + 1}`}
@@ -84,7 +73,6 @@ const Carousel = ({ images }) => {
                 cursor: 'pointer',
                 border: activeIndex === index ? '2px solid red' : '2px solid transparent',
                 boxSizing: 'border-box'
-
               }}
             />
           </SwiperSlide>

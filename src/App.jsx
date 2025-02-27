@@ -3,6 +3,9 @@ import './App.css'
 import Nav from './components/Nav'
 import Product from './components/Product'
 import Home from './pages/Home'
+import Products from './pages/products'
+import ShowProduct from './pages/ShowProduct'
+import VirtualViewer from './pages/VirtualViewer'
 
 function App() {
 
@@ -11,7 +14,9 @@ function App() {
       <Nav />
       <Routes>
         <Route index element={<Home />} />
-        <Route path="products" element={<Product />} />
+        <Route path="products" element={<Products />} />
+        <Route path='products/:slug' element={<ShowProduct />} />
+        <Route path='viewer' element={<VirtualViewer />} />
       </Routes>
     </div>
   )
